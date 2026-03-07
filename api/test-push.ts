@@ -9,38 +9,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const kv = getRedis()
-
-    // Найти все токены подписанные на Хайфу
     const tokens = await kv.smembers('city:חיפה')
 
     if (!tokens || tokens.length === 0) {
-      return res.status(200).json({ ok: false, reason: 'No subscribers for חיפה', tokens: 0 })
+      return res.status(200).json({ ok: false, reason: 'No subscribers' })
     }
 
-    const messages = tokens
-      .filter(t => Expo.isExpoPushToken(t))
-      .map(token => ({
-        to: token,
-        sound: 'default' as const,
-        title: '🧪 ТЕСТ push уведомления',
-        body: 'Если видишь это — фоновый режим работает!',
-        priority: 'high' as const,
-        channelId: 'alerts',
-        data: { type: 'test' },
-      }))
+    // Фильтруем только валидные токены (не test123)
+    const validTokens = tokens.filter(t => Expo.isExpoPushToken(t))
 
-    if (messages.length === 0) {
-      return res.status(200).json({ ok: false, reason: 'No valid Expo tokens', tokens: tokens.length })
-    }
+    const messages = validTokens.map(token => ({
+      to: token,
+      sound: 'default' as const,
+      title: 'Test push',
+      body: 'If you see this, push works!',
+      priority: 'high' as const,
+      data: { type: 'test' },
+    }))
 
+    // Отправить и получить ПОДРОБНЫЙ ответ
     const chunks = expo.chunkPushNotifications(messages)
+    const tickets: any[] = []
+
     for (const chunk of chunks) {
-      await expo.sendPushNotificationsAsync(chunk)
+      const ticketChunk = await expo.sendPushNotificationsAsync(chunk)
+      tickets.push(...ticketChunk)
     }
 
-    return res.status(200).json({ ok: true, sent: messages.length })
+    // Показать ticket для каждого токена
+    const results = validTokens.map((token, i) => ({
+      token: token.substring(0, 30) + '...',
+      ticket: tickets[i],
+    }))
+
+    return res.status(200).json({
+      ok: true,
+      sent: validTokens.length,
+      allTokens: tokens.length,
+      results,
+    })
   } catch (e) {
-    const err = e as Error
-    return res.status(500).json({ error: err.message })
+    return res.status(500).json({ error: (e as Error).message })
   }
 }
