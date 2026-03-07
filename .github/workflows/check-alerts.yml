@@ -1,0 +1,14 @@
+name: Check Alerts
+
+on:
+  schedule:
+    - cron: '* * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check alerts
+        run: curl -s -m 35 https://shelter-finder-api.vercel.app/api/check-alerts || true
