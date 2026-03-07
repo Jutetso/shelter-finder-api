@@ -1,8 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { Expo } from 'expo-server-sdk'
 import { getRedis } from './_redis'
-
-const expo = new Expo()
+import { getFirebaseMessaging } from './_firebase'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -15,39 +13,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: false, reason: 'No subscribers' })
     }
 
-    // Фильтруем только валидные токены (не test123)
-    const validTokens = tokens.filter(t => Expo.isExpoPushToken(t))
+    const messaging = getFirebaseMessaging()
+    const results: Array<{ token: string; status: string; error?: string }> = []
 
-    const messages = validTokens.map(token => ({
-      to: token,
-      sound: 'default' as const,
-      title: 'Test push',
-      body: 'If you see this, push works!',
-      priority: 'high' as const,
-      data: { type: 'test' },
-    }))
-
-    // Отправить и получить ПОДРОБНЫЙ ответ
-    const chunks = expo.chunkPushNotifications(messages)
-    const tickets: any[] = []
-
-    for (const chunk of chunks) {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk)
-      tickets.push(...ticketChunk)
+    for (const token of tokens) {
+      try {
+        await messaging.send({
+          token,
+          notification: { title: '🧪 ТЕСТ push уведомления', body: 'Если видишь это — FCM работает!' },
+          android: { priority: 'high', notification: { channelId: 'alerts', sound: 'default' } },
+          data: { type: 'test' },
+        })
+        results.push({ token: token.slice(0, 20) + '...', status: 'ok' })
+      } catch (e: any) {
+        results.push({ token: token.slice(0, 20) + '...', status: 'error', error: e?.message })
+      }
     }
 
-    // Показать ticket для каждого токена
-    const results = validTokens.map((token, i) => ({
-      token: token.substring(0, 30) + '...',
-      ticket: tickets[i],
-    }))
-
-    return res.status(200).json({
-      ok: true,
-      sent: validTokens.length,
-      allTokens: tokens.length,
-      results,
-    })
+    const sent = results.filter(r => r.status === 'ok').length
+    return res.status(200).json({ ok: true, sent, total: tokens.length, results })
   } catch (e) {
     return res.status(500).json({ error: (e as Error).message })
   }

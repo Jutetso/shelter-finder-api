@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shelter Finder — Find Your Nearest Shelter in Seconds</title>
+  <meta name="description" content="Real-time shelter navigation for rocket alerts. Stay safe with accurate shelter data, live alerts, and instant directions." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            navy: { 900: '#0a0a1a', 800: '#0f0f2e', 700: '#161640', 600: '#1e1e52' },
+            accent: { DEFAULT: '#3B82F6', light: '#60A5FA', dark: '#2563EB' },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a1a; }
+
+    /* Grid background for hero */
+    .hero-grid {
+      background-image:
+        linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* Glow effects */
+    .glow-blue { box-shadow: 0 0 40px rgba(59,130,246,0.15), 0 0 80px rgba(59,130,246,0.05); }
+    .glow-blue-strong { box-shadow: 0 0 30px rgba(59,130,246,0.3), 0 0 60px rgba(59,130,246,0.1); }
+    .glow-btn:hover { box-shadow: 0 0 25px rgba(59,130,246,0.4), 0 0 50px rgba(59,130,246,0.15); }
+    .text-glow { text-shadow: 0 0 40px rgba(59,130,246,0.3); }
+
+    /* Card hover */
+    .card-hover { transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 0 30px rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.3); }
+
+    /* Scroll animations */
+    .fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up-delay-1 { transition-delay: 0.1s; }
+    .fade-up-delay-2 { transition-delay: 0.2s; }
+    .fade-up-delay-3 { transition-delay: 0.3s; }
+
+    /* Logo scroll */
+    @keyframes scroll-logos {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .logo-scroll { animation: scroll-logos 20s linear infinite; }
+
+    /* Sticky nav */
+    .nav-scrolled { background: rgba(10,10,26,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    /* Carousel */
+    .carousel-track { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .carousel-track::-webkit-scrollbar { display: none; }
+    .carousel-card { scroll-snap-align: start; }
+
+    /* Phone mockup */
+    .phone-mockup {
+      width: 260px; height: 520px;
+      border-radius: 36px;
+      border: 3px solid rgba(255,255,255,0.1);
+      background: linear-gradient(135deg, #111133 0%, #0a0a1a 100%);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 40px rgba(59,130,246,0.1);
+      position: relative; overflow: hidden;
+    }
+    .phone-notch {
+      width: 120px; height: 24px;
+      background: #0a0a1a; border-radius: 0 0 16px 16px;
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    }
+
+    /* Radial glow */
+    .radial-glow {
+      background: radial-gradient(ellipse at center, rgba(59,130,246,0.08) 0%, transparent 70%);
+    }
+  </style>
+</head>
+<body class="text-white antialiased overflow-x-hidden">
+
+  <!-- Navigation -->
+  <nav id="nav" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <span class="text-lg font-bold tracking-tight">Shelter Finder</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-gray-400">
+        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="#how-it-works" class="hover:text-white transition-colors">How It Works</a>
+        <a href="#use-cases" class="hover:text-white transition-colors">Use Cases</a>
+        <a href="#download" class="px-5 py-2.5 bg-accent hover:bg-accent-dark rounded-full text-white text-sm font-medium transition-all glow-btn">Download APK</a>
+      </div>
+      <button id="mobile-menu-btn" class="md:hidden text-gray-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 space-y-3">
+      <a href="#features" class="block text-gray-400 hover:text-white transition-colors text-sm">Features</a>
+      <a href="#how-it-works" class="block text-gray-400 hover:text-white transition-colors text-sm">How It Works</a>
+      <a href="#use-cases" class="block text-gray-400 hover:text-white transition-colors text-sm">Use Cases</a>
+      <a href="#download" class="block w-full text-center px-5 py-2.5 bg-accent rounded-full text-white text-sm font-medium">Download APK</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex items-center hero-grid pt-20">
+    <!-- Radial glow behind hero -->
+    <div class="absolute inset-0 radial-glow pointer-events-none"></div>
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-6 w-full grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      <!-- Text -->
+      <div class="fade-up">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-sm text-gray-400 mb-8">
+          <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+          Live alert monitoring active
+        </div>
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-[1.08] tracking-tight mb-6">
+          Find Your Nearest<br/>
+          <span class="text-accent text-glow">Shelter</span> in Seconds
+        </h1>
+        <p class="text-lg lg:text-xl text-gray-400 max-w-lg mb-10 leading-relaxed">
+          Real-time shelter navigation for rocket alerts. Stay safe with accurate shelter data, live alerts, and instant directions.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="#download" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-accent hover:bg-accent-dark rounded-full text-white font-semibold transition-all glow-btn text-base">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download APK
+          </a>
+          <a href="#features" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full border border-white/10 hover:border-white/25 text-white font-medium transition-all text-base">
+            Learn More
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Phone Mockup -->
+      <div class="fade-up fade-up-delay-2 flex justify-center lg:justify-end">
+        <div class="relative">
+          <div class="absolute -inset-10 bg-accent/5 rounded-full blur-[80px]"></div>
+          <div class="phone-mockup relative z-10 p-1">
+            <div class="phone-notch z-20"></div>
+            <!-- Fake map UI inside phone -->
+            <div class="absolute inset-3 rounded-[28px] overflow-hidden bg-gradient-to-b from-[#1a1a3e] to-[#0d0d25] flex flex-col">
+              <!-- Status bar -->
+              <div class="flex items-center justify-between px-5 pt-8 pb-2 text-[10px] text-gray-400">
+                <span>9:41</span>
+                <div class="flex gap-1">
+                  <div class="w-3.5 h-2 rounded-sm border border-gray-500"></div>
+                </div>
+              </div>
+              <!-- Search bar -->
+              <div class="mx-4 mb-3 px-3 py-2 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <span class="text-[11px] text-gray-500">Search shelters nearby…</span>
+              </div>
+              <!-- Fake map area -->
+              <div class="flex-1 relative bg-[#0e1529] mx-2 rounded-xl overflow-hidden">
+                <!-- Grid lines -->
+                <div class="absolute inset-0" style="background-image: linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px); background-size: 30px 30px;"></div>
+                <!-- Dot markers -->
+                <div class="absolute top-[30%] left-[25%] w-2.5 h-2.5 rounded-full bg-accent/80 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                <div class="absolute top-[50%] left-[60%] w-2.5 h-2.5 rounded-full bg-accent/80 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                <div class="absolute top-[65%] left-[35%] w-2.5 h-2.5 rounded-full bg-accent/80 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                <div class="absolute top-[40%] left-[70%] w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.6)]"></div>
+                <!-- User location -->
+                <div class="absolute top-[55%] left-[45%] w-4 h-4 rounded-full bg-accent border-2 border-white shadow-[0_0_12px_rgba(59,130,246,0.7)]"></div>
+                <!-- Distance label -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-accent/90 text-[10px] font-semibold text-white">120m — 1 min walk</div>
+              </div>
+              <!-- Bottom bar -->
+              <div class="flex items-center justify-around py-3 border-t border-white/5">
+                <div class="flex flex-col items-center gap-0.5">
+                  <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                  <span class="text-[8px] text-accent">Home</span>
+                </div>
+                <div class="flex flex-col items-center gap-0.5">
+                  <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/></svg>
+                  <span class="text-[8px] text-gray-500">Map</span>
+                </div>
+                <div class="flex flex-col items-center gap-0.5">
+                  <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                  <span class="text-[8px] text-gray-500">Alerts</span>
+                </div>
+                <div class="flex flex-col items-center gap-0.5">
+                  <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  <span class="text-[8px] text-gray-500">Settings</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Logo Bar -->
+  <section class="py-16 border-y border-white/5">
+    <div class="max-w-7xl mx-auto px-6">
+      <p class="text-center text-sm text-gray-500 uppercase tracking-widest mb-10 fade-up">Trusted by organizations across Israel</p>
+      <div class="overflow-hidden">
+        <div class="flex gap-16 items-center logo-scroll" style="width: max-content;">
+          <!-- Logos repeated for seamless scroll -->
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/></svg><span class="text-base font-medium">Pikud HaOref</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg><span class="text-base font-medium">City of Haifa</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="text-base font-medium">IDF Home Front Command</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="text-base font-medium">Israel Emergency Services</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="text-base font-medium">Tel Aviv Municipality</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="text-base font-medium">Magen David Adom</span></div>
+          <!-- Repeat for loop -->
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/></svg><span class="text-base font-medium">Pikud HaOref</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg><span class="text-base font-medium">City of Haifa</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="text-base font-medium">IDF Home Front Command</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="text-base font-medium">Israel Emergency Services</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="text-base font-medium">Tel Aviv Municipality</span></div>
+          <div class="flex items-center gap-3 text-gray-500 whitespace-nowrap"><svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="text-base font-medium">Magen David Adom</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="py-24 lg:py-32">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16 fade-up">
+        <p class="text-accent text-sm font-semibold uppercase tracking-widest mb-4">Features</p>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-5">Everything you need to<br/><span class="text-accent">stay safe</span></h2>
+        <p class="text-gray-400 text-lg">Built for life-saving speed. Every feature is designed to get you to safety as fast as possible.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-5">
+        <!-- Feature 1 -->
+        <div class="fade-up p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] card-hover">
+          <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">GPS Navigation</h3>
+          <p class="text-gray-400 leading-relaxed">Instant walking directions to the nearest verified shelter. Real-time distance and estimated time displayed on the map.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="fade-up fade-up-delay-1 p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] card-hover">
+          <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Live Alerts</h3>
+          <p class="text-gray-400 leading-relaxed">Real-time rocket alerts from Pikud HaOref with audio and haptic feedback. Know the moment danger approaches your area.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="fade-up fade-up-delay-2 p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] card-hover">
+          <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Community Reviews</h3>
+          <p class="text-gray-400 leading-relaxed">See ratings, photos, and reviews of shelters from other users. Know the condition of a shelter before you arrive.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="fade-up fade-up-delay-3 p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] card-hover">
+          <div class="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Multilingual</h3>
+          <p class="text-gray-400 leading-relaxed">Full support for Hebrew, Russian, and English. Designed for Israel's diverse population — everyone deserves safety.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works — Big Visual Section -->
+  <section id="how-it-works" class="py-24 lg:py-32 relative overflow-hidden">
+    <div class="absolute inset-0 radial-glow pointer-events-none"></div>
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <!-- Visual -->
+        <div class="fade-up relative order-2 lg:order-1">
+          <div class="absolute -inset-16 bg-accent/5 rounded-full blur-[100px] pointer-events-none"></div>
+          <div class="relative rounded-2xl overflow-hidden border border-white/[0.06] glow-blue">
+            <!-- Simulated dashboard UI -->
+            <div class="bg-gradient-to-br from-navy-800 to-navy-900 p-8">
+              <!-- Header -->
+              <div class="flex items-center justify-between mb-8">
+                <div class="flex items-center gap-3">
+                  <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                  <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                </div>
+                <span class="text-xs text-gray-500">shelter-finder v2.0</span>
+              </div>
+              <!-- Stats grid -->
+              <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <p class="text-2xl font-bold text-accent">12,847</p>
+                  <p class="text-xs text-gray-500 mt-1">Shelters mapped</p>
+                </div>
+                <div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <p class="text-2xl font-bold text-green-400">< 3s</p>
+                  <p class="text-xs text-gray-500 mt-1">Avg. response time</p>
+                </div>
+                <div class="p-4 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <p class="text-2xl font-bold text-white">24/7</p>
+                  <p class="text-xs text-gray-500 mt-1">Alert monitoring</p>
+                </div>
+              </div>
+              <!-- Fake log -->
+              <div class="space-y-2 text-xs font-mono">
+                <div class="flex gap-3"><span class="text-gray-600">09:41:02</span><span class="text-green-400">✓ Alert check — no active alerts</span></div>
+                <div class="flex gap-3"><span class="text-gray-600">09:41:07</span><span class="text-accent">→ User located: 32.0853°N, 34.7818°E</span></div>
+                <div class="flex gap-3"><span class="text-gray-600">09:41:07</span><span class="text-white">⊕ 8 shelters found within 500m</span></div>
+                <div class="flex gap-3"><span class="text-gray-600">09:41:08</span><span class="text-green-400">✓ Route calculated: 120m, 1 min walk</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Text -->
+        <div class="fade-up fade-up-delay-1 order-1 lg:order-2">
+          <p class="text-accent text-sm font-semibold uppercase tracking-widest mb-4">Powered by Real Data</p>
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+            12,000+ shelters.<br/>
+            <span class="text-gray-400">One tap away.</span>
+          </h2>
+          <p class="text-gray-400 text-lg leading-relaxed mb-8">
+            Our database includes every public shelter in Israel, sourced from official Pikud HaOref data and community contributions. Updated regularly to ensure accuracy when it matters most.
+          </p>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="text-gray-300">Official Pikud HaOref shelter database</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="text-gray-300">GPS-optimized routing to nearest shelter</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="text-gray-300">Works offline with built-in shelter data</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="text-gray-300">5-second polling for real-time alert detection</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use Cases Carousel -->
+  <section id="use-cases" class="py-24 lg:py-32 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center max-w-2xl mx-auto mb-16 fade-up">
+        <p class="text-accent text-sm font-semibold uppercase tracking-widest mb-4">Use Cases</p>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-5">Built for every<br/><span class="text-accent">scenario</span></h2>
+        <p class="text-gray-400 text-lg">Whether at home, at work, or on the move — Shelter Finder has you covered.</p>
+      </div>
+
+      <div class="carousel-track flex gap-5 overflow-x-auto pb-4 -mx-6 px-6">
+        <!-- Card 1 -->
+        <div class="carousel-card flex-shrink-0 w-[320px] sm:w-[360px] rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-hidden card-hover fade-up">
+          <div class="h-48 bg-gradient-to-br from-red-900/20 to-red-600/10 flex items-center justify-center">
+            <svg class="w-20 h-20 text-red-400/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="12" y1="2" x2="12" y2="4"/></svg>
+          </div>
+          <div class="p-6">
+            <h3 class="text-lg font-bold mb-2">Rocket Alert Response</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Instant notification with audio siren and haptic feedback. See the nearest shelter and start navigating in under 3 seconds.</p>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="carousel-card flex-shrink-0 w-[320px] sm:w-[360px] rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-hidden card-hover fade-up fade-up-delay-1">
+          <div class="h-48 bg-gradient-to-br from-blue-900/20 to-blue-600/10 flex items-center justify-center">
+            <svg class="w-20 h-20 text-blue-400/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <div class="p-6">
+            <h3 class="text-lg font-bold mb-2">Navigation in Unfamiliar Areas</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Traveling or visiting a new city? Find shelters you've never been to before with step-by-step walking directions on the map.</p>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="carousel-card flex-shrink-0 w-[320px] sm:w-[360px] rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-hidden card-hover fade-up fade-up-delay-2">
+          <div class="h-48 bg-gradient-to-br from-purple-900/20 to-purple-600/10 flex items-center justify-center">
+            <svg class="w-20 h-20 text-purple-400/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="p-6">
+            <h3 class="text-lg font-bold mb-2">Family Safety Planning</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Pre-identify shelters near home, school, and work. Share shelter locations with family members for coordinated safety.</p>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="carousel-card flex-shrink-0 w-[320px] sm:w-[360px] rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-hidden card-hover fade-up fade-up-delay-3">
+          <div class="h-48 bg-gradient-to-br from-green-900/20 to-green-600/10 flex items-center justify-center">
+            <svg class="w-20 h-20 text-green-400/40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <div class="p-6">
+            <h3 class="text-lg font-bold mb-2">Multilingual Access</h3>
+            <p class="text-gray-400 text-sm leading-relaxed">Immigrants and tourists can navigate shelter locations in Hebrew, Russian, or English — no language barrier in emergencies.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="py-24 lg:py-32 border-t border-white/5 relative">
+    <div class="absolute inset-0 radial-glow pointer-events-none"></div>
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 fade-up">
+        <div class="text-center">
+          <p class="text-4xl lg:text-5xl font-bold text-accent mb-2">12K+</p>
+          <p class="text-gray-400 text-sm">Shelters mapped</p>
+        </div>
+        <div class="text-center">
+          <p class="text-4xl lg:text-5xl font-bold text-white mb-2">< 3s</p>
+          <p class="text-gray-400 text-sm">Alert response</p>
+        </div>
+        <div class="text-center">
+          <p class="text-4xl lg:text-5xl font-bold text-white mb-2">3</p>
+          <p class="text-gray-400 text-sm">Languages</p>
+        </div>
+        <div class="text-center">
+          <p class="text-4xl lg:text-5xl font-bold text-white mb-2">24/7</p>
+          <p class="text-gray-400 text-sm">Alert monitoring</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section id="download" class="py-24 lg:py-32 relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-b from-accent/5 via-accent/[0.02] to-transparent pointer-events-none"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/8 rounded-full blur-[150px] pointer-events-none"></div>
+
+    <div class="max-w-3xl mx-auto px-6 text-center relative z-10 fade-up">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-accent/20 bg-accent/5 text-sm text-accent mb-8">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/></svg>
+        Available now for Android
+      </div>
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+        Your safety shouldn't<br/>depend on luck
+      </h2>
+      <p class="text-gray-400 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+        Download Shelter Finder and know exactly where to go when every second counts. Free, open-source, and built for the people of Israel.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="#" class="inline-flex items-center justify-center gap-2 px-10 py-4 bg-accent hover:bg-accent-dark rounded-full text-white font-semibold text-lg transition-all glow-btn">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download APK
+        </a>
+        <a href="https://github.com" class="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full border border-white/10 hover:border-white/25 text-white font-medium text-lg transition-all">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <span class="font-semibold">Shelter Finder</span>
+        </div>
+        <div class="flex items-center gap-8 text-sm text-gray-500">
+          <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+          <a href="#" class="hover:text-white transition-colors">Terms</a>
+          <a href="#" class="hover:text-white transition-colors">Contact</a>
+        </div>
+        <p class="text-sm text-gray-600">&copy; 2026 Shelter Finder. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // Sticky nav background on scroll
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('nav-scrolled', window.scrollY > 40);
+    });
+
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    menuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+    // Close mobile menu on link click
+    mobileMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+    });
+
+    // Intersection Observer for fade-up animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
+  </script>
+</body>
+</html>
