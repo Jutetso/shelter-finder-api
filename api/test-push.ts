@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             notification: {
               channelId: 'alerts',
               priority: 'max',
-              defaultSound: true,
+              sound: 'siren',
               defaultVibrateTimings: true,
               visibility: 'public',
               notificationCount: 1,
