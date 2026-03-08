@@ -72,7 +72,7 @@ async function checkAndNotify(): Promise<CheckResult> {
             priority: 'high',
             ttl: 0,
             notification: {
-              channelId: 'alerts',
+              channelId: 'alerts_v2',
               priority: 'max',
               sound: 'siren',
               defaultVibrateTimings: true,
