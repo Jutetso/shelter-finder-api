@@ -68,7 +68,18 @@ async function checkAndNotify(): Promise<CheckResult> {
       await messaging.send({
         token,
         notification: { title: '🚨 צבע אדום!', body: 'היכנסו למרחב המוגן! Бегите в укрытие!' },
-        android: { priority: 'high', notification: { channelId: 'alerts', sound: 'default', priority: 'max' } },
+        android: {
+            priority: 'high',
+            ttl: 0,
+            notification: {
+              channelId: 'alerts',
+              priority: 'max',
+              defaultSound: true,
+              defaultVibrateTimings: true,
+              visibility: 'public',
+              notificationCount: 1,
+            },
+          },
         data: { type: 'alert', cities: JSON.stringify(alertCities) },
       })
       sent++

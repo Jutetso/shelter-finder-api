@@ -21,7 +21,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await messaging.send({
           token,
           notification: { title: '🧪 ТЕСТ push уведомления', body: 'Если видишь это — FCM работает!' },
-          android: { priority: 'high', notification: { channelId: 'alerts', sound: 'default' } },
+          android: {
+            priority: 'high',
+            ttl: 0,
+            notification: {
+              channelId: 'alerts',
+              priority: 'max',
+              defaultSound: true,
+              defaultVibrateTimings: true,
+              visibility: 'public',
+              notificationCount: 1,
+            },
+          },
           data: { type: 'test' },
         })
         results.push({ token: token.slice(0, 20) + '...', status: 'ok' })
