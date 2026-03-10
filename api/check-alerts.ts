@@ -4,35 +4,47 @@ import { getFirebaseMessaging } from './_firebase'
 
 const LAST_ALERT_KEY = 'last_alert_id'
 
-async function fetchAlerts(): Promise<string[]> {
-  try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000)
-    const res = await fetch('https://api.tzevaadom.co.il/notifications', { signal: controller.signal })
-    clearTimeout(timeout)
-    const data = await res.json() as Array<{ date: string; cities?: string[] }>
-    if (Array.isArray(data) && data.length > 0) {
-      const recent = data[0]
-      if (Date.now() - new Date(recent.date).getTime() < 120000) return recent.cities || []
-    }
-    return []
-  } catch {
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 8000)
-      const res = await fetch('https://www.oref.org.il/WarningMessages/alert/alerts.json', {
-        headers: { 'Referer': 'https://www.oref.org.il/', 'X-Requested-With': 'XMLHttpRequest' },
-        signal: controller.signal,
-      })
-      clearTimeout(timeout)
-      const text = await res.text()
-      const cleaned = text.replace(/^\uFEFF/, '').trim()
-      if (!cleaned || cleaned.length <= 5 || cleaned === '[]' || cleaned === 'null') return []
-      const parsed = JSON.parse(cleaned) as { data?: string | string[] }
-      if (!parsed?.data) return []
-      return Array.isArray(parsed.data) ? parsed.data : [parsed.data]
-    } catch { return [] }
+async function fetchFromTzevaadom(): Promise<string[]> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  const res = await fetch('https://api.tzevaadom.co.il/notifications', { signal: controller.signal })
+  clearTimeout(timeout)
+  const data = await res.json() as Array<{ date: string; cities?: string[] }>
+  if (Array.isArray(data) && data.length > 0) {
+    const recent = data[0]
+    if (Date.now() - new Date(recent.date).getTime() < 300000) return recent.cities || []
   }
+  return []
+}
+
+async function fetchFromOref(): Promise<string[]> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  const res = await fetch('https://www.oref.org.il/WarningMessages/alert/alerts.json', {
+    headers: { 'Referer': 'https://www.oref.org.il/', 'X-Requested-With': 'XMLHttpRequest' },
+    signal: controller.signal,
+  })
+  clearTimeout(timeout)
+  const text = await res.text()
+  const cleaned = text.replace(/^\uFEFF/, '').trim()
+  if (!cleaned || cleaned.length <= 5 || cleaned === '[]' || cleaned === 'null') return []
+  const parsed = JSON.parse(cleaned) as { data?: string | string[] }
+  if (!parsed?.data) return []
+  return Array.isArray(parsed.data) ? parsed.data : [parsed.data]
+}
+
+async function fetchAlerts(): Promise<string[]> {
+  const [tzevaadomResult, orefResult] = await Promise.allSettled([
+    fetchFromTzevaadom(),
+    fetchFromOref(),
+  ])
+  if (tzevaadomResult.status === 'fulfilled' && tzevaadomResult.value.length > 0) {
+    return tzevaadomResult.value
+  }
+  if (orefResult.status === 'fulfilled' && orefResult.value.length > 0) {
+    return orefResult.value
+  }
+  return []
 }
 
 interface CheckResult { alerts: number; notified: number; reason?: string }
