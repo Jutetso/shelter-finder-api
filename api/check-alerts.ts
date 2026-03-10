@@ -97,14 +97,6 @@ async function checkAndNotify(): Promise<CheckResult> {
       sent++
     } catch (e: any) {
       console.error('[Push] Failed:', token.slice(0, 20), e?.message)
-      if (e?.code === 'messaging/registration-token-not-registered' || e?.code === 'messaging/invalid-registration-token') {
-        const cityData = await kv.get(`token:${token}`)
-        if (cityData) {
-          const cities: string[] = JSON.parse(cityData)
-          for (const city of cities) await kv.srem(`city:${city}`, token)
-          await kv.del(`token:${token}`)
-        }
-      }
     }
   }
   return { alerts: alertCities.length, notified: sent }
