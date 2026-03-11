@@ -49,11 +49,25 @@ async function fetchAlerts(): Promise<string[]> {
 
 interface CheckResult { alerts: number; notified: number; reason?: string }
 
+async function cleanupDeadToken(kv: ReturnType<typeof getRedis>, token: string): Promise<void> {
+  // Remove token from all city sets and delete token key
+  const cityKeys = await kv.keys('city:*')
+  for (const key of cityKeys) {
+    await kv.srem(key, token)
+  }
+  await kv.del(`token:${token}`)
+}
+
 async function checkAndNotify(): Promise<CheckResult> {
   const alertCities = await fetchAlerts()
   if (alertCities.length === 0) return { alerts: 0, notified: 0 }
 
   const kv = getRedis()
+
+  // Log the alert
+  await kv.lpush('alert_log', JSON.stringify({ ts: new Date().toISOString(), cities: alertCities, source: 'check' }))
+  await kv.ltrim('alert_log', 0, 99)
+
   const alertId = JSON.stringify(alertCities.slice().sort()).substring(0, 80)
   const lastId = await kv.get(LAST_ALERT_KEY)
   if (lastId === alertId) return { alerts: alertCities.length, notified: 0, reason: 'duplicate' }
@@ -75,6 +89,7 @@ async function checkAndNotify(): Promise<CheckResult> {
 
   const messaging = getFirebaseMessaging()
   let sent = 0
+  let errors = 0
   for (const token of tokensToNotify) {
     try {
       await messaging.send({
@@ -97,8 +112,26 @@ async function checkAndNotify(): Promise<CheckResult> {
       sent++
     } catch (e: any) {
       console.error('[Push] Failed:', token.slice(0, 20), e?.message)
+      errors++
+      // Auto-cleanup dead tokens (unregistered / not found)
+      const msg: string = e?.message ?? ''
+      if (msg.includes('not found') || msg.includes('Requested entity') || msg.includes('UNREGISTERED') || msg.includes('InvalidRegistration')) {
+        console.log('[Push] Removing dead token:', token.slice(0, 20))
+        await cleanupDeadToken(kv, token)
+      }
     }
   }
+
+  // Log send result
+  await kv.lpush('send_log', JSON.stringify({
+    ts: new Date().toISOString(),
+    cities: alertCities,
+    tokensFound: tokensToNotify.size,
+    sent,
+    errors,
+  }))
+  await kv.ltrim('send_log', 0, 99)
+
   return { alerts: alertCities.length, notified: sent }
 }
 
